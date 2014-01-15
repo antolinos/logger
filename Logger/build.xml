@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project Logger">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+        <jar destfile="C:/Users/demariaa/Desktop/logger.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="loggerViz.LoggerViz"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="C:/Users/demariaa/workspace/Logger/bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="C:/opt/jboss-6.1.0/server/default/lib/gson-1.7.1.jar"/>
+        </jar>
+    </target>
+</project>
