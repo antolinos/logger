@@ -181,10 +181,19 @@ public class ParserThread implements Runnable {
 								List<String> commaSeparated = Arrays.asList(content.split(","));
 	//							String packageName = commaSeparated.get(0).trim();
 								String methodName = commaSeparated.get(1).trim().toUpperCase();
+								
+								
 								/** Start - End **/
 								String type = commaSeparated.get(2).trim();
 								String time = commaSeparated.get(3).trim();
 								String duration = commaSeparated.get(4).trim();
+								
+								/** It was not log end for H5 methods **/
+								if (methodName.contains("H5")){
+									type = "END";
+									duration = "300";
+								}
+								
 								
 								if (type.trim().equals("END")||(type.trim().equals("ERROR"))){
 									if (!this.excludedmethods.contains(methodName)){
