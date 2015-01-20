@@ -133,7 +133,7 @@ public class ParserThread implements Runnable {
 		String year = Arrays.asList(date.split("-")).get(0);
 		
 		ArrayList<HashMap<String, String>> data = new ArrayList<HashMap<String, String>>();
-		if (year.equals("2014")){
+//		if (year.equals("2014")){
 			log(String.format("Parsing file %s \t date(%s:%s:%s)  Package: %s ", date, day, month, year, packageMethodName, file.getTotalSpace()));
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			try {
@@ -187,6 +187,14 @@ public class ParserThread implements Runnable {
 								String type = commaSeparated.get(2).trim();
 								String time = commaSeparated.get(3).trim();
 								String duration = commaSeparated.get(4).trim();
+								String params = new String();
+								if (commaSeparated.size() >= 6){
+//									String params = commaSeparated.get(5).trim();
+//									System.out.println("-->" + params);
+									if (commaSeparated.toString().indexOf("{") != -1){
+										params = commaSeparated.toString().substring(commaSeparated.toString().indexOf("{"));
+									}
+								}
 								
 								/** It was not log end for H5 methods **/
 								if (methodName.contains("H5")){
@@ -206,7 +214,7 @@ public class ParserThread implements Runnable {
 											if (Arrays.asList(content.split("\\[")).size() > 1){
 												error = Arrays.asList(content.split("\\[")).get(1).trim();
 											}
-											data.add(getRow(methodName, time, duration, error, cause));
+											data.add(getRow(methodName, time, duration, error, cause, params));
 										}
 										else{
 											data.add(getRow(methodName, time, duration));
@@ -226,7 +234,7 @@ public class ParserThread implements Runnable {
 			} finally {
 				br.close();
 			}
-		}
+//		}
 		return data;
 	}
 	
@@ -266,7 +274,7 @@ public class ParserThread implements Runnable {
 	}
 
 	
-	private static HashMap<String, String> getRow(String methodName, String time, String duration, String message, String cause) {
+	private static HashMap<String, String> getRow(String methodName, String time, String duration, String message, String cause, String params) {
 		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss,SSS",Locale.FRANCE);
 		HashMap<String, String> keys = new HashMap<String, String>();
 		keys.put("time", sdf.format(new Date(Long.parseLong(time))));
@@ -274,6 +282,7 @@ public class ParserThread implements Runnable {
 		keys.put("duration", duration);
 		keys.put("message", message);
 		keys.put("cause", cause);
+		keys.put("params", params);
 		
 		return keys;
 	}
