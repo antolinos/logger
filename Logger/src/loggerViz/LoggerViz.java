@@ -38,11 +38,11 @@ public class LoggerViz {
 		String outputFolder = Arrays.asList(args).get(1);
 		System.out.println("Output folder is: " + outputFolder);
 		
-		new Thread(new ParserThread(sources,"BIOSAXS_MOBILE", outputPathMobile, excludedMethods)).start();
+//		new Thread(new ParserThread(sources,"BIOSAXS_MOBILE", outputPathMobile, excludedMethods)).start();
 		new Thread(new ParserThread(sources,"BIOSAXS_WS", outputPath, excludedMethods)).start();
-		new Thread(new ParserThread(sources,"BIOSAXS_UI", outputPathUI, excludedMethods)).start();
-		new Thread(new ParserThread(sources,"_ERROR", outputPathUIError, excludedMethods)).start();
-		new Thread(new ParserThread(sources,"LOGIN", outputPathLogin, excludedMethods)).start();
+//		new Thread(new ParserThread(sources,"BIOSAXS_UI", outputPathUI, excludedMethods)).start();
+//		new Thread(new ParserThread(sources,"_ERROR", outputPathUIError, excludedMethods)).start();
+//		new Thread(new ParserThread(sources,"LOGIN", outputPathLogin, excludedMethods)).start();
 		
 	}
 
