@@ -4,17 +4,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.reflect.Type;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -23,17 +21,18 @@ public class ParserThread implements Runnable {
 	private String logPath;
 	private String packageName;
 	private String outputPath;
-	private HashSet<String> excludedmethods;
-	private HashMap<String, Integer> excludedmethodsInformation;
 
 	private HashMap<String, List<HashMap<String, String>>> resultsByDay = new HashMap<String, List<HashMap<String, String>>>();
 
-	public ParserThread(String logPath, String packageName, String outputPath, HashSet<String> excludedmethods) {
+	private HashSet<String> filesWritten = new HashSet<String>();
+	private boolean printParams;
+	
+	public ParserThread(String logPath, String packageName, String outputPath, HashSet<String> excludedmethods, boolean printParams) {
+		this.printParams = printParams;
 		this.logPath = logPath;
 		this.packageName = packageName;
 		this.outputPath = outputPath;
-		this.excludedmethods = excludedmethods;
-		this.excludedmethodsInformation = new HashMap<String, Integer>();
+		this.filesWritten = new HashSet<String>();
 	}
 
 	private static void log(String message) {
@@ -52,34 +51,54 @@ public class ParserThread implements Runnable {
 		List<File> results = new ArrayList<File>();
 		for (File file : files) {
 			if (file.getName().contains(".log")){
-			// String[] splitted = file.getName().split("\\.");
-			// if (splitted.length == 3){
-			// /** it should have this format: 2013-02-25 **/
-			// String date = Arrays.asList(splitted).get(2);
-			// if (date.split("-").length == 4) {
-			results.add(file);
+				results.add(file);
 			}
-			// }
-			// }
-			// else{
-			// log("Discarding: " + file.getAbsolutePath() );
-			// }
 		}
 		return results;
 	}
 
-	private static String getTitle(File file) {
-		return "'" + file.getName() + "'";
-	}
-
-	// outputPath
-	private static void writeResult(String outputFilePath, String result, String packageName) throws FileNotFoundException {
+	private void writeResult(String outputFilePath, List<String> sortedList) {
 		File file = new File(outputFilePath);
 		log(String.format("Writing output to: %s", outputFilePath));
-		PrintWriter writer = new PrintWriter(file);
-		writer = new PrintWriter(file);
-		writer.print("function " + packageName + "(){\n return " + result + ";\n }");
-		writer.close();
+		try {
+			FileWriter writer = new FileWriter(file, false);
+			writer.append(new Gson().toJson(sortedList));
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+	private void writeResult(String outputFilePath, ArrayList<HashMap<String, String>> result) throws FileNotFoundException {
+		File file = new File(outputFilePath);
+		log(String.format("Writing output to: %s", outputFilePath));
+		System.out.println(result.size());
+		
+		try {
+			/** If it is first time to process the file we remove **/
+			if (this.filesWritten.contains(outputFilePath)){
+				BufferedReader br = new BufferedReader(new FileReader(outputFilePath));  
+				Type typeOfObjectsList = new TypeToken<ArrayList<HashMap<String, String>>>() {}.getType();
+				ArrayList<HashMap<String, String>> json = new Gson().fromJson(br, typeOfObjectsList);
+				
+				for (int i = 0; i < json.size(); i++) {
+					result.add(json.get(i));
+				}
+			}
+			else{
+				this.filesWritten.add(outputFilePath);
+			}
+			/** Writting **/
+			FileWriter writer = new FileWriter(file, false);
+			writer.append(new Gson().toJson(result));
+			writer.close();
+			
+			
+		} catch (IOException e) {
+			System.out.println(result.size());
+			e.printStackTrace();
+		}
 
 	}
 
@@ -92,35 +111,72 @@ public class ParserThread implements Runnable {
 		}
 	}
 
-	public void process(String packageName, String outputPath) throws IOException {
+	public String getDateByFileName(String filename) throws IOException {
+		String result = "server.log";
+		if (filename.contains("ispyb.log.")){
+			List<String> splitted = Arrays.asList(filename.split("\\."));
+			if (splitted.size() == 3){
+				String date = splitted.get(2);
+				List<String> dateSplitted =  Arrays.asList(date.split("-"));
+				if (dateSplitted.size() == 4){
+					String year = dateSplitted.get(0);
+					String month = dateSplitted.get(1);
+					String day = dateSplitted.get(2);
+					return  year + "_" + month + "_" + day ;
+				}
+			}
+		}
+		return result;
+		
+	}
+	
+	public void process(String packageName, String outputPath, boolean printParams) throws IOException {
 		resultsByDay = new HashMap<String, List<HashMap<String, String>>>();
 		log("STARTING " + packageName);
 		if (new File(this.logPath).exists()) {
-			log(String.format("Reading files from : %s", this.logPath));
-			File[] allFiles = new File(logPath).listFiles();
-			List<File> files = filterByFileNames(allFiles);
-			
-			List<HashMap<String, String>> data  = new ArrayList<HashMap<String,String>>();
-			for (File file : files) {
-				data.addAll(parseFile(file, packageName));
+			if (!packageName.toUpperCase().equals("INDEX")){
+				log(String.format("Reading files from : %s", this.logPath));
+				File[] allFiles = new File(logPath).listFiles();
+				List<File> files = filterByFileNames(allFiles);
+				
+				List<HashMap<String, String>> data  = new ArrayList<HashMap<String,String>>();
+				for (File file : files) {
+					data.addAll(parseFile(file, packageName, printParams));
+				}
+				System.out.println(data.size());
+//				writeResult(outputPath, new Gson().toJson(data));
 			}
-			System.out.println(data.size());
-			writeResult(outputPath, new Gson().toJson(data), packageName);
+			else{
+				File[] allFiles = new File(logPath).listFiles();
+				HashSet<String> toPrint = new HashSet<String>();
+				for (File file : allFiles) {
+					if (file.isFile()){
+						String name = file.getName();
+						String result = this.getDateByFileName(name);
+						if (result != null){
+							toPrint.add(result);
+						}
+					}
+				}
+				List<String> sortedList = new ArrayList<String>(toPrint);
+				Collections.sort(sortedList);
+				writeResult(outputPath + "/" + packageName + ".json", sortedList);
+			}
 		} else {
 			error("File " + logPath + " doesn't exist");
 		}
 	}
 
 
+	
 	/**
 	 * @param file
 	 * @param packageMethodName
 	 * @return
 	 * @throws IOException
 	 */
-	private ArrayList<HashMap<String, String>> parseFile(File file, String packageMethodName) throws IOException {
+	private ArrayList<HashMap<String, String>> parseFile(File file, String packageMethodName, boolean printParams) throws IOException {
 		ArrayList<HashMap<String, String>> data = new ArrayList<HashMap<String, String>>();
-		log(String.format("Parsing file %s \t )  Package: %s ", file.getName(), packageMethodName));
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		try {
 			StringBuilder sb = new StringBuilder();
@@ -137,8 +193,12 @@ public class ParserThread implements Runnable {
 							Type HashType = new TypeToken<HashMap<String, String>>() {}.getType();
 							try {
 								HashMap<String, String> obj = new Gson().fromJson(json, HashType);
+								if (!printParams){
+									obj.put("PARAMS", "[]");
+								}
 								data.add(obj);
 							} catch (Exception e) {
+								e.printStackTrace();
 							}
 						}
 					}
@@ -147,59 +207,24 @@ public class ParserThread implements Runnable {
 		} finally {
 			br.close();
 		}
+		/**
+		 * Writing all data to disk
+		 */
+		if (!printParams){
+			writeResult(outputPath + "/" + packageMethodName + "_" + this.getDateByFileName(file.getName()) + ".json", data);
+		}
+		else{
+			writeResult(outputPath + "/" + packageMethodName + "_" + file.getName() + ".json", data);
+		}
 		return data;
 	}
 
-	private HashMap<String, String> getLogonRow(String methodName, String time, String duration, String user, String proposalType) {
-		HashMap<String, String> keys = new HashMap<String, String>();
-		keys.put("time", time);
-		keys.put("method", methodName);
-		keys.put("duration", duration);
-		HashMap<String, String> s = new HashMap<String, String>();
-		s.put("user", user);
-		s.put("proposalType", proposalType);
-		keys.put("user", new Gson().toJson(s));
-		return keys;
-	}
 
-	private static HashMap<String, String> getRow(String methodName, String time, String duration) {
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss,SSS", Locale.FRANCE);
-		HashMap<String, String> keys = new HashMap<String, String>();
-		keys.put("time", sdf.format(new Date(Long.parseLong(time))));
-		keys.put("method", methodName);
-		keys.put("duration", duration);
-		return keys;
-	}
-
-	private static HashMap<String, String> getLogonRow(String methodName, String time, String duration, String user) {
-		HashMap<String, String> keys = new HashMap<String, String>();
-		keys.put("time", time);
-		keys.put("method", methodName);
-		keys.put("duration", duration);
-		HashMap<String, String> s = new HashMap<String, String>();
-		s.put("user", user);
-		keys.put("user", new Gson().toJson(s));
-
-		return keys;
-	}
-
-	private static HashMap<String, String> getRow(String methodName, String time, String duration, String message, String cause, String params) {
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss,SSS", Locale.FRANCE);
-		HashMap<String, String> keys = new HashMap<String, String>();
-		keys.put("time", sdf.format(new Date(Long.parseLong(time))));
-		keys.put("method", methodName);
-		keys.put("duration", duration);
-		keys.put("message", message);
-		keys.put("cause", cause);
-		keys.put("params", params);
-
-		return keys;
-	}
 
 	@Override
 	public void run() {
 		try {
-			this.process(this.packageName, this.outputPath);
+			this.process(this.packageName, this.outputPath, this.printParams);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

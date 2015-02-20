@@ -17,24 +17,15 @@ public class LoggerViz {
 		System.out.println("Sources are on: " + sources);
 
 		String outputFolder = Arrays.asList(args).get(1);
-		System.out.println("Output folder is: " + outputFolder);
-
-		String logPath = "/user/ademaria/Documents/ISPyB/logger/files/";
-		String outputPath = outputFolder + "/BIOSAXS_WS.js";
-		String outputPathUI = outputFolder + "/BIOSAXS_UI.js";
-		String outputPathUIError = outputFolder + "/BIOSAXS_UI_ERROR.js";
-		String outputPathMobile = outputFolder + "/BIOSAXS_MOBILE.js";
-		String outputPathLogin = outputFolder + "/BIOSAXS_LOGIN.js";
-
-		// new Thread(new ParserThread(sources,"BIOSAXS_MOBILE",
-		// outputPathMobile, excludedMethods)).start();
-		new Thread(new ParserThread(sources, "BIOSAXS_WS", outputPath, excludedMethods)).start();
-		// new Thread(new ParserThread(sources,"BIOSAXS_UI", outputPathUI,
-		// excludedMethods)).start();
-		// new Thread(new ParserThread(sources,"_ERROR", outputPathUIError,
-		// excludedMethods)).start();
-		// new Thread(new ParserThread(sources,"LOGIN", outputPathLogin,
-		// excludedMethods)).start();
+		System.out.println("Output path is: " + outputFolder);
+		
+		String pack =  Arrays.asList(args).get(2);
+		System.out.println("Package: " +  pack);
+		
+		//new Thread(new ParserThread(sources, pack, outputFolder, excludedMethods)).start();
+		
+		new Thread(new ParserThread(sources, pack, outputFolder, excludedMethods, true)).start();
+		new Thread(new ParserThread(sources, pack, outputFolder, excludedMethods, false)).start();
 
 	}
 
