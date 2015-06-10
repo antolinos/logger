@@ -190,6 +190,8 @@ public class ParserThread implements Runnable {
 					if (line.contains(packageMethodName)) {
 						if (line.contains("v2.0")) {
 							String json = (line.substring(line.indexOf("]") + 1));
+							/** wildfly generated sometimes :  (default task-187) {"PACKAGE":"BIOSAXS_WS","COMMENTS":"","DATE":"M       **/
+							json = (line.substring(line.indexOf("{")));
 							Type HashType = new TypeToken<HashMap<String, String>>() {}.getType();
 							try {
 								HashMap<String, String> obj = new Gson().fromJson(json, HashType);
